@@ -1,6 +1,5 @@
 package main
 
-// #cgo pkg-config: lua
 /*
 #cgo pkg-config: lua
 #include "lua.h"
@@ -19,17 +18,20 @@ const char* my_lua_tostring(lua_State *L, int idx) {
 	return lua_tostring(L, idx);
 }
 */
+
 import "C"
 import (
 	"bufio"
 	"fmt"
 	"os"
+
+	"../lua"
 )
 
 func main() {
-	var L *C.lua_State = C.luaL_newstate()
-
-	C.luaL_openlibs(L)
+	//var L *C.lua_State = C.luaL_newstate()
+	//C.luaL_openlibs(L)
+	state := lua.NewState()
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -37,20 +39,27 @@ func main() {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		err := C.my_luaL_loadbuffer(L, C._GoStringPtr(line), C._GoStringLen(line), C._GoStringPtr("line"))
+		//err := C.my_luaL_loadbuffer(L, C._GoStringPtr(line), C._GoStringLen(line), C._GoStringPtr("line"))
+		//err := C.luaL_loadstring(L, C._GoStringPtr(line))
 
-		if err != 0 {
-			fmt.Fprintf(os.Stderr, "%s\n", C.my_lua_tostring(L, -1))
+		// if err != 0 {
+		asdf := "line"
+		if err := state.LoadBuffer(line, asdf); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			//fmt.Fprintf(os.Stderr, "%s\n", C.GoString(C.my_lua_tostring(L, -1)))
 		} else {
-			err = C.my_lua_pcall(L, 0, 0, 0)
+			//err = C.my_lua_pcall(L, 0, 0, 0)
 
-			if err != 0 {
-				fmt.Fprintf(os.Stderr, "%s\n", C.my_lua_tostring(L, -1))
+			//if err != 0 {
+			if err := state.PCall(); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				//fmt.Fprintf(os.Stderr, "%s\n", C.GoString(C.my_lua_tostring(L, -1)))
 			}
 		}
 
 		fmt.Print("> ")
 	}
 
-	C.lua_close(L)
+	//C.lua_close(L)
+	state.Close()
 }
